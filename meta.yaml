@@ -1,0 +1,107 @@
+{% set name = "mace_lammps_plugin" %}
+{% set build = 2 %}
+
+{% set lammps_version = "20230802.2" %}
+{% set lammps = "stable_2Aug2023_update2" %}
+{% set lammps_sha256 = "3bcecabc9cad08d0a4e4d989b52d29c58505f7ead8ebacf43c9db8d9fd3d564a" %}
+{% set version = "0.0.1" %}
+{% set torch_version = "2.1" %}
+
+# determine cuda version, refer to https://github.com/conda-forge/pytorch-cpu-feedstock/blob/main/recipe/meta.yaml
+{% if cuda_compiler_version in (None, "None", True, False) %}
+{% set cuda_major = 0 %}
+{% else %}
+{% set cuda_major = environ.get("cuda_compiler_version", "11.8").split(".")[0] | int %}
+{% endif %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  - git_url: git@github.com:saltball/mace_lammps_plugin.git
+    git_depth: 1
+  - url: https://mirror.ghproxy.com/https://github.com/lammps/lammps/archive/{{ lammps }}.tar.gz
+    folder: lammps
+    sha256: {{lammps_sha256}}
+
+build:
+  number: {{ build }}
+  string: cuda{{ cuda_compiler_version | replace('.', '') }}_py{{ CONDA_PY }}_h{{ PKG_HASH }}_torch{{ torch_version }}_{{ mpi }}_{{ PKG_BUILDNUM }}  # [cuda_compiler_version != "None"]
+  string: cpu_py{{ CONDA_PY }}_h{{ PKG_HASH }}_torch{{ torch_version }}_{{ mpi }}_{{ PKG_BUILDNUM }}                                                 # [cuda_compiler_version == "None"]
+  skip: True  # [not linux]
+  skip: True  # [ppc64le]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ compiler('cuda') }}    # [cuda_compiler_version != "None"]
+    - cuda-nvcc ={{ cuda_compiler_version }}  # [cuda_compiler_version != 'None']
+    {% if cuda_major >= 12 %}
+    - cuda-cudart-static
+    - cuda-cudart-dev
+    # - cuda-opencl
+    # - cuda-driver-dev                        
+    # - cuda-nvrtc-dev                         
+    # - cuda-nvtx-dev                          
+    # - cuda-nvml-dev                          
+    # - cuda-profiler-api                      
+    # - libcublas-dev                          
+    # - libcufft-dev                           
+    # - libcurand-dev                          
+    # - libcusolver-dev                        
+    # - libcusparse-dev                        
+    {% endif %}
+    - cmake
+    - make
+    - gxx_linux-64
+    - pytorch-cuda ={{ cuda_compiler_version }}  # [cuda_compiler_version != 'None']
+    - pytorch ={{ torch_version }}
+    - lammps-precxx11
+    
+  
+  host:
+    - cudnn                           # [cuda_compiler_version != "None"]
+    - {{ mpi }}
+    # {% if cuda_major >= 12 %}
+    # - cuda-driver-dev                        
+    # - cuda-cudart-dev                        
+    # - cuda-nvrtc-dev                         
+    # - cuda-nvtx-dev                          
+    # - cuda-nvml-dev                          
+    # - cuda-profiler-api                      
+    # - libcublas-dev                          
+    # - libcufft-dev                           
+    # - libcurand-dev                          
+    # - libcusolver-dev                        
+    # - libcusparse-dev                        
+    # {% endif %}
+    - pytorch-cuda  # [cuda_compiler_version != 'None']
+    - pytorch
+    - lammps-precxx11
+  
+  run:
+    - __cuda  # [cuda_compiler_version != "None"]    
+    - {{ pin_compatible('cudnn') }}  # [cuda_compiler_version != 'None']
+    - lammps-precxx11
+    - pytorch
+
+  test:
+    files:
+      - in.lammps
+      - data.water
+      - 20230814model.pt
+    commands:
+      - lmp -in in.lammps
+
+about:
+  home: https://mace-docs.readthedocs.io/
+  license: GPL-2.0
+  license_family: GPL
+  summary: 'LAMMPS plugin for MACE is used for dynamic simulation with MACE potential.'
+
+  description: |
+    MACE - Fast and accurate machine learning interatomic potentials with higher order equivariant message passing.
+  doc_url: https://mace-docs.readthedocs.io/en/latest/guide/lammps.html
+  dev_url: https://github.com/ACEsuit/mace
