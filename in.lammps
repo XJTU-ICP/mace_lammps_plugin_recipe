@@ -14,7 +14,7 @@ mass 		1 8
 mass 		2 1
 
 pair_style mace no_domain_decomposition
-pair_coeff * * 2023-08-14-mace-yuan-trained-mptrj-04.model-lammps.pt O H
+pair_coeff * * 20230814model.pt O H
 
 velocity        all create 4000.0 23456789
 
