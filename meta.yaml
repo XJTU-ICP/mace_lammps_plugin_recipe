@@ -1,4 +1,4 @@
-{% set name = "mace_lammps_plugin" %}
+{% set name = "mace_lammps_plugin_atomv" %}
 {% set build = 0 %}
 {% set proc_type = "cuda" if cuda_compiler_version != "None" else "cpu" %}
 {% set lammps_version = "20230802.2" %}
@@ -21,6 +21,7 @@ package:
 
 source:
   - git_url: https://github.com/XJTU-ICP/mace_lammps_plugin.git
+    git_rev: atom_virial
     git_depth: 1
   - url: https://github.com/lammps/lammps/archive/{{ lammps }}.tar.gz
     folder: lammps
